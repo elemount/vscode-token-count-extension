@@ -7,7 +7,7 @@ export interface ITokenCounter {
     countTokens(text: string): number;
 }
 
-class OpenAITokenCounter implements ITokenCounter {
+class TiktokenTokenCounter implements ITokenCounter {
     countTokens(text: string): number {
         try {
             const encoder = encoding_for_model('gpt-4');
@@ -15,7 +15,7 @@ class OpenAITokenCounter implements ITokenCounter {
             encoder.free();
             return tokens.length;
         } catch (error) {
-            console.error('Error counting tokens with OpenAI provider:', error);
+            console.error('Error counting tokens with tiktoken provider:', error);
             return 0;
         }
     }
@@ -32,30 +32,15 @@ class ClaudeTokenCounter implements ITokenCounter {
     }
 }
 
-class FallbackTokenCounter implements ITokenCounter {
-    countTokens(text: string): number {
-        try {
-            // Use tiktoken as fallback for Gemini and other providers
-            const encoder = encoding_for_model('gpt-4');
-            const tokens = encoder.encode(text);
-            encoder.free();
-            return tokens.length;
-        } catch (error) {
-            console.error('Error counting tokens with fallback provider:', error);
-            return 0;
-        }
-    }
-}
-
 export function getTokenCounter(provider: TokenProvider): ITokenCounter {
     switch (provider) {
         case 'openai':
-            return new OpenAITokenCounter();
-        case 'claude':
-            return new ClaudeTokenCounter();
         case 'gemini':
         case 'other':
+            return new TiktokenTokenCounter();
+        case 'claude':
+            return new ClaudeTokenCounter();
         default:
-            return new FallbackTokenCounter();
+            return new TiktokenTokenCounter();
     }
 }
