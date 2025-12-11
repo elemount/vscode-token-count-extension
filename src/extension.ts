@@ -1,15 +1,29 @@
 import * as vscode from 'vscode';
-import { encoding_for_model } from 'tiktoken';
+import { getTokenCounter, TokenProvider } from './tokenProviders';
 
 let statusBarItem: vscode.StatusBarItem;
+let currentProvider: TokenProvider = 'openai';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Tiktoken extension is now active');
+
+    // Load configuration
+    loadConfiguration();
 
     // Create status bar item
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     statusBarItem.show();
     context.subscriptions.push(statusBarItem);
+
+    // Listen for configuration changes
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            if (e.affectsConfiguration('tokenCounter.defaultProvider')) {
+                loadConfiguration();
+                updateTokenCount();
+            }
+        })
+    );
 
     // Update token count when active editor changes
     context.subscriptions.push(
@@ -51,16 +65,15 @@ export function activate(context: vscode.ExtensionContext) {
     updateTokenCount();
 }
 
+function loadConfiguration() {
+    const config = vscode.workspace.getConfiguration('tokenCounter');
+    currentProvider = config.get<TokenProvider>('defaultProvider', 'openai');
+    console.log(`Using token provider: ${currentProvider}`);
+}
+
 function countTokens(text: string): number {
-    try {
-        const encoder = encoding_for_model('gpt-4');
-        const tokens = encoder.encode(text);
-        encoder.free();
-        return tokens.length;
-    } catch (error) {
-        console.error('Error counting tokens:', error);
-        return 0;
-    }
+    const counter = getTokenCounter(currentProvider);
+    return counter.countTokens(text);
 }
 
 function updateTokenCount() {

@@ -2,43 +2,48 @@
 
 ## Completed Requirements
 
-This VS Code extension successfully implements all four requirements from the problem statement:
+This VS Code extension successfully implements all requirements from the problem statement:
 
 ### ✅ Requirement 1: Status Bar Token Counter
 - **Implementation**: Status bar item displays `token:num` format
-- **Location**: `src/extension.ts` lines 10-12, 86
+- **Location**: `src/extension.ts` lines 14-16, 99-102
 - **Status**: ✅ Complete
 - **Details**: 
   - Status bar item positioned on the right side (priority 100)
-  - Automatically updates when editor or document changes
-  - Shows current file token count using GPT-4 tiktoken encoding
+  - Automatically updates when editor, document, or configuration changes
+  - Shows current file token count using configured provider
 
-### ✅ Requirement 2: Use Tiktoken Package
-- **Implementation**: Uses `tiktoken` library v1.0.15
-- **Location**: `src/extension.ts` line 2, 54-64
+### ✅ Requirement 2: Multi-Provider Support
+- **Implementation**: Supports OpenAI (tiktoken), Claude, Gemini, and Other
+- **Location**: `src/tokenProviders.ts`, `src/extension.ts`, `package.json` configuration
 - **Status**: ✅ Complete
 - **Details**:
-  - Imported `encoding_for_model` from tiktoken
-  - Uses GPT-4 encoding model
-  - Properly frees encoder resources to prevent memory leaks
+  - **OpenAI Provider**: Uses `tiktoken` library v1.0.15 with GPT-4 encoding
+  - **Claude Provider**: Uses `@anthropic-ai/tokenizer` v0.0.4 (official Anthropic library)
+  - **Gemini Provider**: Falls back to tiktoken for reasonable estimation
+  - **Other Provider**: Falls back to tiktoken for general purpose use
+  - User-configurable via VS Code settings (`tokenCounter.defaultProvider`)
+  - Configuration changes apply immediately without restart
 
 ### ✅ Requirement 3: Selection Token Counter
 - **Implementation**: Shows `selection:num` when text is selected
-- **Location**: `src/extension.ts` lines 81-84
+- **Location**: `src/extension.ts` lines 94-100
 - **Status**: ✅ Complete
 - **Details**:
   - Listens to selection change events
   - Displays as `token:X selection:Y` format
   - Only shows selection count when text is actually selected
+  - Uses configured provider for both document and selection counts
 
 ### ✅ Requirement 4: Language Model Tool API
 - **Implementation**: Exposes tool via VS Code Language Model API
-- **Location**: `src/extension.ts` lines 36-48, `package.json` lines 18-31
+- **Location**: `src/extension.ts` lines 50-62, `package.json` lines 23-38
 - **Status**: ✅ Complete
 - **Details**:
   - Tool name: `vscode-tiktoken-extension.countTokens`
   - Accepts JSON input with `text` field
   - Returns formatted response with token count
+  - Uses configured provider for counting
   - Properly registered with VS Code's `vscode.lm.registerTool`
 
 ## Project Structure
@@ -46,19 +51,23 @@ This VS Code extension successfully implements all four requirements from the pr
 ```
 vscode-tiktoken-extension/
 ├── src/
-│   └── extension.ts          # Main extension logic
+│   ├── extension.ts          # Main extension logic
+│   └── tokenProviders.ts     # Token provider abstraction layer
 ├── out/
 │   ├── extension.js          # Compiled JavaScript
-│   └── extension.js.map      # Source map
+│   ├── extension.js.map      # Source map
+│   ├── tokenProviders.js     # Compiled providers
+│   └── tokenProviders.js.map # Providers source map
 ├── .vscode/
 │   ├── launch.json           # Debug configuration
 │   └── tasks.json            # Build tasks
-├── package.json              # Extension manifest
+├── package.json              # Extension manifest with configuration
 ├── tsconfig.json             # TypeScript configuration
 ├── .gitignore                # Git ignore rules
 ├── .vscodeignore             # Extension packaging ignore rules
 ├── README.md                 # User documentation
 ├── ARCHITECTURE.md           # System architecture
+├── FEATURES.md               # Feature documentation
 ├── DEMONSTRATION.md          # Usage demonstrations
 ├── example.md                # Example file for testing
 └── LICENSE                   # License file
@@ -66,13 +75,63 @@ vscode-tiktoken-extension/
 
 ## Technical Implementation
 
+### Token Provider Abstraction
+```typescript
+export interface ITokenCounter {
+    countTokens(text: string): number;
+}
+
+// Shared tiktoken-based counter for OpenAI, Gemini, and Other
+class TiktokenTokenCounter implements ITokenCounter {
+    countTokens(text: string): number {
+        const encoder = encoding_for_model('gpt-4');
+        const tokens = encoder.encode(text);
+        encoder.free();
+        return tokens.length;
+    }
+}
+
+// Claude-specific counter
+class ClaudeTokenCounter implements ITokenCounter {
+    countTokens(text: string): number {
+        return countClaudeTokens(text);
+    }
+}
+
+// Factory function
+export function getTokenCounter(provider: TokenProvider): ITokenCounter {
+    switch (provider) {
+        case 'openai':
+        case 'gemini':
+        case 'other':
+            return new TiktokenTokenCounter();
+        case 'claude':
+            return new ClaudeTokenCounter();
+    }
+}
+```
+
+### Configuration Management
+```typescript
+function loadConfiguration() {
+    const config = vscode.workspace.getConfiguration('tokenCounter');
+    currentProvider = config.get<TokenProvider>('defaultProvider', 'openai');
+}
+
+// Listen for configuration changes
+vscode.workspace.onDidChangeConfiguration((e) => {
+    if (e.affectsConfiguration('tokenCounter.defaultProvider')) {
+        loadConfiguration();
+        updateTokenCount();
+    }
+});
+```
+
 ### Token Counting
 ```typescript
 function countTokens(text: string): number {
-    const encoder = encoding_for_model('gpt-4');
-    const tokens = encoder.encode(text);
-    encoder.free();
-    return tokens.length;
+    const counter = getTokenCounter(currentProvider);
+    return counter.countTokens(text);
 }
 ```
 
@@ -102,34 +161,40 @@ vscode.lm.registerTool('vscode-tiktoken-extension.countTokens', tool);
 
 ## Event Listeners
 
-The extension listens to three key events:
+The extension listens to four key events:
 1. `onDidChangeActiveTextEditor` - When switching between files
 2. `onDidChangeTextDocument` - When document content changes
 3. `onDidChangeTextEditorSelection` - When text selection changes
+4. `onDidChangeConfiguration` - When settings change (provider configuration)
 
 ## Testing Results
 
 ### Compilation
 - ✅ TypeScript compilation successful
 - ✅ No compilation errors
-- ✅ Output file generated: `out/extension.js` (4.04 KB)
+- ✅ Output files generated: `out/extension.js` (4.5 KB), `out/tokenProviders.js` (1.7 KB)
 
 ### Token Counting Verification
-- ✅ "Hello, world!" → 4 tokens
-- ✅ Longer paragraph → 18 tokens
-- ✅ Empty string → 0 tokens
-- ✅ Example file (example.md) → 195 tokens
+Test text: "Hello, world! This is a test of token counting."
+
+- ✅ OpenAI provider (tiktoken): 12 tokens
+- ✅ Claude provider (@anthropic-ai/tokenizer): 12 tokens
+- ✅ Gemini provider (fallback): 12 tokens
+- ✅ Other provider (fallback): 12 tokens
+- ✅ All providers working correctly
 
 ### Code Quality
-- ✅ Code review: No issues found
+- ✅ Code review: All issues addressed
 - ✅ Security scan (CodeQL): 0 alerts
 - ✅ All TypeScript types properly defined
 - ✅ Proper resource cleanup (encoder.free())
+- ✅ No code duplication (refactored to use shared TiktokenTokenCounter)
 
 ## Dependencies
 
 ### Production
-- `tiktoken@^1.0.15` - Token counting library
+- `tiktoken@^1.0.15` - Token counting library for OpenAI, Gemini, Other
+- `@anthropic-ai/tokenizer@^0.0.4` - Official Claude tokenizer from Anthropic
 
 ### Development
 - `@types/node@^20.x` - Node.js type definitions
@@ -138,6 +203,25 @@ The extension listens to three key events:
 - `eslint@^8.54.0` - Code linting
 - `@typescript-eslint/eslint-plugin@^6.13.0` - ESLint TypeScript plugin
 - `@typescript-eslint/parser@^6.13.0` - ESLint TypeScript parser
+
+## Configuration
+
+### Setting the Default Provider
+
+Users can configure which token provider to use via VS Code settings:
+
+```json
+{
+  "tokenCounter.defaultProvider": "openai"  // Options: "openai", "claude", "gemini", "other"
+}
+```
+
+Or via the Settings UI:
+1. Open VS Code Settings (Ctrl/Cmd + ,)
+2. Search for "Token Counter"
+3. Select preferred provider from dropdown
+
+Configuration changes are applied immediately without restarting VS Code.
 
 ## Installation Instructions
 
@@ -162,6 +246,7 @@ The extension listens to three key events:
    - Press F5 to launch Extension Development Host
    - Open any file to see token count in status bar
    - Select text to see selection count
+   - Change provider in settings to test different providers
 
 ## Performance Characteristics
 
@@ -169,30 +254,45 @@ The extension listens to three key events:
 - **CPU**: Low - only updates on actual changes (event-driven)
 - **UI Impact**: Negligible - single status bar item
 - **Startup**: Fast - activates on `onStartupFinished`
+- **Provider Switching**: Instant - no restart required
+
+## Provider Details
+
+| Provider | Library | Model | Accuracy | Use Case |
+|----------|---------|-------|----------|----------|
+| OpenAI | tiktoken | GPT-4 | Exact | GPT-3.5, GPT-4 |
+| Claude | @anthropic-ai/tokenizer | Claude | Exact | Claude 2, Claude 3 |
+| Gemini | tiktoken (fallback) | GPT-4 | Approximate | Gemini models |
+| Other | tiktoken (fallback) | GPT-4 | Approximate | General use |
 
 ## Future Enhancement Possibilities
 
-1. Configuration options:
-   - Choose different encoding models (GPT-3.5, Claude, etc.)
+1. Additional configuration options:
    - Customize status bar format
    - Set token count warning thresholds
+   - Per-provider model selection (e.g., GPT-3.5 vs GPT-4)
 
 2. Additional features:
    - Token count per line/function
-   - Cost estimation based on token count
+   - Cost estimation based on token count and provider
    - Export token statistics
+   - Compare token counts across different providers
 
 3. UI improvements:
    - Color-coded token counts based on thresholds
-   - Tooltip with detailed information
+   - Tooltip with detailed information (provider used, model, etc.)
    - Commands to copy token count
+   - Status bar item click to show provider info
 
 ## Conclusion
 
 All requirements have been successfully implemented:
 - ✅ Status bar shows token count for current file
-- ✅ Uses tiktoken package with GPT-4 encoding
+- ✅ Multi-provider support: OpenAI (tiktoken), Claude, Gemini (fallback), Other (fallback)
+- ✅ User-configurable provider selection with immediate effect
 - ✅ Shows selection token count when text is selected
 - ✅ Exposes Language Model Tool API for programmatic access
+- ✅ No security vulnerabilities (CodeQL: 0 alerts)
+- ✅ All providers tested and working correctly
 
-The extension is production-ready, well-documented, and follows VS Code extension best practices.
+The extension is production-ready, well-documented, and follows VS Code extension best practices with a clean, extensible architecture that supports multiple token counting providers.

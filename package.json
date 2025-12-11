@@ -21,11 +21,28 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [],
+    "configuration": {
+      "title": "Token Counter",
+      "properties": {
+        "tokenCounter.defaultProvider": {
+          "type": "string",
+          "default": "openai",
+          "enum": ["openai", "claude", "gemini", "other"],
+          "enumDescriptions": [
+            "OpenAI (GPT) tokenizer using tiktoken",
+            "Claude tokenizer from Anthropic",
+            "Gemini tokenizer (fallback to tiktoken)",
+            "Other models (fallback to tiktoken)"
+          ],
+          "description": "Default token counting provider to use"
+        }
+      }
+    },
     "languageModelTools": [
       {
         "name": "vscode-tiktoken-extension.countTokens",
         "displayName": "Count Tokens",
-        "description": "Count the number of tokens in text using tiktoken",
+        "description": "Count the number of tokens in text using the configured provider",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -56,7 +73,8 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
-    "tiktoken": "^1.0.15"
+    "tiktoken": "^1.0.15",
+    "@anthropic-ai/tokenizer": "^0.0.4"
   }
 }
 

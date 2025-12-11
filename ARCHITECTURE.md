@@ -2,9 +2,7 @@
 
 ## Extension Overview
 
-This extension is primarily designed as a **Language Model API tool** for AI assistants to programmatically count tokens. The status bar features serve as a secondary convenience for human developers.
-
-## Extension Flow
+This extension is primarily designed as a **Language Model API tool** for AI assistants to programmatically count tokens, with support for multiple token providers (OpenAI, Claude, Gemini, and others). The status bar features serve as a secondary convenience for human developers.
 
 ## Language Model Tool Integration (Primary Feature)
 
@@ -25,9 +23,17 @@ This extension is primarily designed as a **Language Model API tool** for AI ass
          │ countTokens(text)
          ▼
 ┌─────────────────────────────┐
-│   tiktoken Library          │
-│   encoding_for_model('gpt-4')|
+│  Token Provider Factory     │
+│  getTokenCounter(provider)  │
 └────────┬────────────────────┘
+         │
+         ├──────┬──────┬──────┐
+         │      │      │      │
+         ▼      ▼      ▼      ▼
+    OpenAI  Claude Gemini Other
+   (tiktoken) (@anthropic) (fallback)
+         │      │      │      │
+         └──────┴──────┴──────┘
          │
          │ Return token count
          ▼
@@ -39,12 +45,20 @@ This extension is primarily designed as a **Language Model API tool** for AI ass
 
 ## Status Bar Integration (Secondary Feature)
 
+## Extension Flow
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    VS Code Extension                     │
 │                                                           │
 │  ┌────────────────────────────────────────────────┐     │
 │  │           activation (onStartupFinished)        │     │
+│  └──────────────────┬──────────────────────────────┘     │
+│                     │                                     │
+│                     ▼                                     │
+│  ┌────────────────────────────────────────────────┐     │
+│  │          Load Configuration                     │     │
+│  │          (tokenCounter.defaultProvider)         │     │
 │  └──────────────────┬──────────────────────────────┘     │
 │                     │                                     │
 │                     ▼                                     │
@@ -58,6 +72,7 @@ This extension is primarily designed as a **Language Model API tool** for AI ass
 │  │   • onDidChangeActiveTextEditor                 │     │
 │  │   • onDidChangeTextDocument                     │     │
 │  │   • onDidChangeTextEditorSelection              │     │
+│  │   • onDidChangeConfiguration                    │     │
 │  └──────────────────┬──────────────────────────────┘     │
 │                     │                                     │
 │                     ▼                                     │
@@ -76,10 +91,19 @@ This extension is primarily designed as a **Language Model API tool** for AI ass
 │  ┌────────────────────────────────────────────────┐     │
 │  │         countTokens(text) Function              │     │
 │  │                                                  │     │
-│  │  1. Get tiktoken encoder (GPT-4)                │     │
-│  │  2. Encode text to tokens                       │     │
-│  │  3. Free encoder resources                      │     │
-│  │  4. Return token count                          │     │
+│  │  1. Get token counter for current provider      │     │
+│  │  2. Delegate to provider implementation         │     │
+│  │  3. Return token count                          │     │
+│  └──────────────────┬──────────────────────────────┘     │
+│                     │                                     │
+│                     ▼                                     │
+│  ┌────────────────────────────────────────────────┐     │
+│  │      Token Provider Abstraction Layer           │     │
+│  │                                                  │     │
+│  │  • TiktokenTokenCounter (tiktoken, GPT-4)       │     │
+│  │    - Used for OpenAI, Gemini, Other providers   │     │
+│  │  • ClaudeTokenCounter (@anthropic-ai/tokenizer) │     │
+│  │    - Used for Claude provider                   │     │
 │  └────────────────────────────────────────────────┘     │
 │                                                           │
 │  ┌────────────────────────────────────────────────┐     │
@@ -88,6 +112,7 @@ This extension is primarily designed as a **Language Model API tool** for AI ass
 │  │  Name: vscode-tiktoken-extension.countTokens    │     │
 │  │  Input: { text: string }                        │     │
 │  │  Output: LanguageModelToolResult                │     │
+│  │  Uses configured provider                       │     │
 │  └────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────┘
 
@@ -95,12 +120,13 @@ This extension is primarily designed as a **Language Model API tool** for AI ass
                            ▼
                            
           ┌────────────────────────────┐
-          │     tiktoken Library       │
-          │   (GPT-4 encoding model)   │
+          │   Token Provider Libraries │
+          │   • tiktoken               │
+          │   • @anthropic-ai/tokenizer│
           └────────────────────────────┘
 ```
 
-## Status Bar Display States (Secondary Feature)
+## Status Bar Display States
 
 ### State 1: No Selection
 ```
@@ -119,35 +145,33 @@ Status Bar: [... other items ...] [status bar item hidden]
 
 ## Data Flow
 
-### Primary: Language Model Tool Invocation
-1. **AI Assistant** → Invokes tool with text parameter
-2. **Tool Handler** → Receives invocation request
-3. **Token Counting** → `countTokens()` uses tiktoken
-4. **Response** → Returns LanguageModelToolResult
-5. **AI Assistant** → Receives token count for processing
-
-### Secondary: Status Bar Updates
-1. **User Action** → Editor/Document/Selection Change
+1. **User Action** → Editor/Document/Selection Change or Configuration Change
 2. **Event Trigger** → VS Code fires event
-3. **Event Handler** → `updateTokenCount()` called
-4. **Token Counting** → `countTokens()` uses tiktoken
+3. **Event Handler** → `updateTokenCount()` or `loadConfiguration()` called
+4. **Token Counting** → `countTokens()` delegates to selected provider
 5. **UI Update** → Status bar text updated
 6. **Display** → User sees token count in status bar
 
 ## Components
 
-| Component | Responsibility | Priority |
-|-----------|---------------|----------|
-| `LanguageModelTool` | API for AI assistants to count tokens | **Primary** |
-| `countTokens()` | Token counting using tiktoken | **Core** |
-| `extension.ts` | Main extension logic, activation, event handling | Core |
-| `updateTokenCount()` | Update status bar with current counts | Secondary |
-| `statusBarItem` | VS Code UI element for displaying counts | Secondary |
+| Component | Responsibility |
+|-----------|---------------|
+| `extension.ts` | Main extension logic, activation, event handling |
+| `tokenProviders.ts` | Token provider abstraction and implementations |
+| `loadConfiguration()` | Load and update provider configuration |
+| `countTokens()` | Token counting using configured provider |
+| `getTokenCounter()` | Factory function to get provider instance |
+| `TiktokenTokenCounter` | Shared token counter for OpenAI/Gemini/Other using tiktoken |
+| `ClaudeTokenCounter` | Claude token counter using @anthropic-ai/tokenizer |
+| `updateTokenCount()` | Update status bar with current counts |
+| `statusBarItem` | VS Code UI element for displaying counts |
+| `LanguageModelTool` | API for AI assistants to count tokens |
 
 ## Dependencies
 
 - `vscode`: VS Code API (v1.85.0+)
-- `tiktoken`: Token counting library (v1.0.15+)
+- `tiktoken`: OpenAI token counting library (v1.0.15+)
+- `@anthropic-ai/tokenizer`: Claude token counting library (v0.0.4+)
 - `@types/vscode`: TypeScript type definitions
 - `typescript`: TypeScript compiler
 
@@ -157,3 +181,4 @@ Status Bar: [... other items ...] [status bar item hidden]
 - Updates are triggered by VS Code events (efficient)
 - No polling or timers (minimal CPU usage)
 - Status bar item is hidden when no editor is active (clean UI)
+- Configuration changes applied immediately without restart
