@@ -1,6 +1,43 @@
 # Architecture
 
+## Extension Overview
+
+This extension is primarily designed as a **Language Model API tool** for AI assistants to programmatically count tokens. The status bar features serve as a secondary convenience for human developers.
+
 ## Extension Flow
+
+## Language Model Tool Integration (Primary Feature)
+
+```
+┌──────────────────┐
+│  AI Assistant    │
+│  (e.g., Copilot) │
+└────────┬─────────┘
+         │
+         │ Invoke Tool
+         │ { text: "..." }
+         ▼
+┌─────────────────────────────┐
+│ vscode-tiktoken-extension   │
+│      .countTokens           │
+└────────┬────────────────────┘
+         │
+         │ countTokens(text)
+         ▼
+┌─────────────────────────────┐
+│   tiktoken Library          │
+│   encoding_for_model('gpt-4')|
+└────────┬────────────────────┘
+         │
+         │ Return token count
+         ▼
+┌─────────────────────────────┐
+│ LanguageModelToolResult     │
+│ "The text contains X tokens"│
+└─────────────────────────────┘
+```
+
+## Status Bar Integration (Secondary Feature)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -63,7 +100,7 @@
           └────────────────────────────┘
 ```
 
-## Status Bar Display States
+## Status Bar Display States (Secondary Feature)
 
 ### State 1: No Selection
 ```
@@ -80,39 +117,16 @@ Status Bar: [... other items ...] [token:195 selection:14]
 Status Bar: [... other items ...] [status bar item hidden]
 ```
 
-## Language Model Tool Integration
-
-```
-┌──────────────────┐
-│  AI Assistant    │
-│  (e.g., Copilot) │
-└────────┬─────────┘
-         │
-         │ Invoke Tool
-         │ { text: "..." }
-         ▼
-┌─────────────────────────────┐
-│ vscode-tiktoken-extension   │
-│      .countTokens           │
-└────────┬────────────────────┘
-         │
-         │ countTokens(text)
-         ▼
-┌─────────────────────────────┐
-│   tiktoken Library          │
-│   encoding_for_model('gpt-4')|
-└────────┬────────────────────┘
-         │
-         │ Return token count
-         ▼
-┌─────────────────────────────┐
-│ LanguageModelToolResult     │
-│ "The text contains X tokens"│
-└─────────────────────────────┘
-```
-
 ## Data Flow
 
+### Primary: Language Model Tool Invocation
+1. **AI Assistant** → Invokes tool with text parameter
+2. **Tool Handler** → Receives invocation request
+3. **Token Counting** → `countTokens()` uses tiktoken
+4. **Response** → Returns LanguageModelToolResult
+5. **AI Assistant** → Receives token count for processing
+
+### Secondary: Status Bar Updates
 1. **User Action** → Editor/Document/Selection Change
 2. **Event Trigger** → VS Code fires event
 3. **Event Handler** → `updateTokenCount()` called
@@ -122,13 +136,13 @@ Status Bar: [... other items ...] [status bar item hidden]
 
 ## Components
 
-| Component | Responsibility |
-|-----------|---------------|
-| `extension.ts` | Main extension logic, activation, event handling |
-| `countTokens()` | Token counting using tiktoken |
-| `updateTokenCount()` | Update status bar with current counts |
-| `statusBarItem` | VS Code UI element for displaying counts |
-| `LanguageModelTool` | API for AI assistants to count tokens |
+| Component | Responsibility | Priority |
+|-----------|---------------|----------|
+| `LanguageModelTool` | API for AI assistants to count tokens | **Primary** |
+| `countTokens()` | Token counting using tiktoken | **Core** |
+| `extension.ts` | Main extension logic, activation, event handling | Core |
+| `updateTokenCount()` | Update status bar with current counts | Secondary |
+| `statusBarItem` | VS Code UI element for displaying counts | Secondary |
 
 ## Dependencies
 
