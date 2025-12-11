@@ -1,7 +1,7 @@
 {
   "name": "vscode-tiktoken-extension",
-  "displayName": "Tiktoken Counter",
-  "description": "Show token count for current file and selection using tiktoken",
+  "displayName": "Token Counter for Language Models",
+  "description": "Language Model API tool for counting tokens in text using tiktoken",
   "version": "0.0.1",
   "publisher": "elemount",
   "repository": {
@@ -12,6 +12,7 @@
     "vscode": "^1.85.0"
   },
   "categories": [
+    "AI",
     "Other"
   ],
   "activationEvents": [

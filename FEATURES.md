@@ -2,38 +2,9 @@
 
 ## 🎯 Core Features
 
-### 1. Real-time Token Counting in Status Bar
+### 1. Language Model Tool API (Primary Feature)
 
-The extension displays the token count for the currently active file in the VS Code status bar.
-
-**Display Format:**
-```
-token:195
-```
-
-**When it updates:**
-- Opening a file
-- Switching between files
-- Editing the file content
-- Saving the file
-
-### 2. Selection Token Counter
-
-When you select text, the status bar shows both the document token count and the selection token count.
-
-**Display Format:**
-```
-token:195 selection:14
-```
-
-**Example scenario:**
-1. Open a file with 1000 tokens
-2. Select a paragraph with 50 tokens
-3. Status bar shows: `token:1000 selection:50`
-
-### 3. Language Model Tool API
-
-AI assistants can programmatically count tokens using the exposed tool.
+AI assistants can programmatically count tokens using the exposed tool. This is the primary purpose of the extension.
 
 **Tool Name:**
 ```
@@ -51,6 +22,41 @@ vscode-tiktoken-extension.countTokens
 ```
 The text contains 4 tokens.
 ```
+
+**Purpose:**
+- Enables AI assistants to determine token counts for prompts and responses
+- Essential for managing token budgets in language model interactions
+- Allows automated token-aware text processing
+- Integrates seamlessly with VS Code's Language Model API
+
+### 2. Real-time Token Counting in Status Bar
+
+The extension displays the token count for the currently active file in the VS Code status bar as a convenience feature for developers.
+
+**Display Format:**
+```
+token:195
+```
+
+**When it updates:**
+- Opening a file
+- Switching between files
+- Editing the file content
+- Saving the file
+
+### 3. Selection Token Counter
+
+When you select text, the status bar shows both the document token count and the selection token count.
+
+**Display Format:**
+```
+token:195 selection:14
+```
+
+**Example scenario:**
+1. Open a file with 1000 tokens
+2. Select a paragraph with 50 tokens
+3. Status bar shows: `token:1000 selection:50`
 
 ## 🔧 Technical Specifications
 
@@ -113,6 +119,10 @@ Status: [hidden]
 
 ## 🔌 Language Model Tool Usage
 
+### Primary Use Case: AI Assistant Integration
+
+The Language Model Tool is the core feature of this extension, designed specifically for AI assistants to integrate token counting into their workflows.
+
 ### From Chat Participants
 
 AI assistants can use the tool to help users understand token usage:
@@ -131,21 +141,31 @@ const result = await vscode.lm.invokeTool(
 // Result: "The text contains 4 tokens."
 ```
 
+### Integration Benefits
+
+- **Automated Token Management**: AI assistants can check token counts before processing
+- **Dynamic Prompt Optimization**: Adjust prompts based on token limits
+- **Cost Estimation**: Calculate API costs programmatically
+- **Context Window Management**: Stay within model limits automatically
+
 ## 💡 Use Cases
 
-### 1. API Cost Estimation
+### 1. AI Assistant Token Management (Primary)
+Enable AI assistants to automatically manage token budgets and optimize their responses based on token counts.
+
+### 2. API Cost Estimation
 Know exactly how many tokens your prompts/responses will use before sending to OpenAI.
 
-### 2. Token Limit Management
+### 3. Token Limit Management
 Stay within model token limits (e.g., 8K, 32K, 128K).
 
-### 3. Prompt Engineering
+### 4. Prompt Engineering
 Optimize prompts by understanding their token cost.
 
-### 4. Document Analysis
+### 5. Document Analysis
 Quickly see the token size of documentation or code files.
 
-### 5. Selection Optimization
+### 6. Selection Optimization
 Select and refine specific sections while monitoring token count.
 
 ## 🚀 Quick Start
@@ -157,11 +177,12 @@ Select and refine specific sections while monitoring token count.
 
 ## 📈 Benefits
 
+- ✅ **AI-First Design**: Built specifically for Language Model API integration
 - ✅ **Accurate**: Uses official tiktoken library
-- ✅ **Real-time**: Updates instantly on changes
+- ✅ **Programmatic**: Accessible via VS Code's Language Model Tool API
+- ✅ **Real-time**: Updates instantly on changes (for status bar)
 - ✅ **Lightweight**: Minimal resource usage
-- ✅ **Integrated**: Native VS Code status bar
-- ✅ **Accessible**: Language Model Tool API for AI
+- ✅ **Integrated**: Native VS Code status bar for human convenience
 - ✅ **Simple**: No configuration needed
 
 ## 🎓 Learning Resources

@@ -2,37 +2,11 @@
 
 ## Overview
 
-This demonstration shows how the VS Code Tiktoken Extension works.
+This extension is primarily designed as a **Language Model API tool** for AI assistants to programmatically count tokens in text. It also provides visual status bar features as a convenience for developers.
 
 ## Features Demonstrated
 
-### 1. Status Bar Token Counter
-
-When you open any file in VS Code with this extension installed, you will see a token count displayed in the status bar (bottom-right corner).
-
-**Example:**
-```
-token:195
-```
-
-This shows that the current file contains 195 tokens (using GPT-4 tiktoken encoding).
-
-### 2. Selection Token Counter
-
-When you select text, the status bar updates to show both:
-- The total document token count
-- The selected text token count
-
-**Example:**
-```
-token:195 selection:14
-```
-
-This shows:
-- Total document: 195 tokens
-- Current selection: 14 tokens
-
-### 3. Language Model Tool API
+### 1. Language Model Tool API (Primary Feature)
 
 The extension exposes a Language Model Tool that AI assistants can invoke:
 
@@ -66,6 +40,39 @@ An AI assistant can invoke this tool to count tokens in any text:
 The text contains 10 tokens.
 ```
 
+**Primary Use Cases:**
+- AI assistants managing token budgets
+- Automated prompt optimization
+- Dynamic context window management
+- Programmatic cost estimation
+- Token-aware text processing
+
+### 2. Status Bar Token Counter (Convenience Feature)
+
+When you open any file in VS Code with this extension installed, you will see a token count displayed in the status bar (bottom-right corner).
+
+**Example:**
+```
+token:195
+```
+
+This shows that the current file contains 195 tokens (using GPT-4 tiktoken encoding).
+
+### 3. Selection Token Counter (Convenience Feature)
+
+When you select text, the status bar updates to show both:
+- The total document token count
+- The selected text token count
+
+**Example:**
+```
+token:195 selection:14
+```
+
+This shows:
+- Total document: 195 tokens
+- Current selection: 14 tokens
+
 ## Installation & Testing
 
 1. Clone the repository
@@ -77,8 +84,9 @@ The text contains 10 tokens.
 
 ## Technical Details
 
+- Primary purpose: Language Model API tool for AI assistants
 - Uses `tiktoken` library with GPT-4 encoding model
-- Automatically updates on:
+- Status bar automatically updates on:
   - Active editor changes
   - Document text changes
   - Selection changes
