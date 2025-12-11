@@ -12,6 +12,12 @@
 │                     │                                     │
 │                     ▼                                     │
 │  ┌────────────────────────────────────────────────┐     │
+│  │          Load Configuration                     │     │
+│  │          (tokenCounter.defaultProvider)         │     │
+│  └──────────────────┬──────────────────────────────┘     │
+│                     │                                     │
+│                     ▼                                     │
+│  ┌────────────────────────────────────────────────┐     │
 │  │          Create Status Bar Item                 │     │
 │  │          (Right-aligned, priority 100)          │     │
 │  └────────────────────────────────────────────────┘     │
@@ -21,6 +27,7 @@
 │  │   • onDidChangeActiveTextEditor                 │     │
 │  │   • onDidChangeTextDocument                     │     │
 │  │   • onDidChangeTextEditorSelection              │     │
+│  │   • onDidChangeConfiguration                    │     │
 │  └──────────────────┬──────────────────────────────┘     │
 │                     │                                     │
 │                     ▼                                     │
@@ -39,10 +46,19 @@
 │  ┌────────────────────────────────────────────────┐     │
 │  │         countTokens(text) Function              │     │
 │  │                                                  │     │
-│  │  1. Get tiktoken encoder (GPT-4)                │     │
-│  │  2. Encode text to tokens                       │     │
-│  │  3. Free encoder resources                      │     │
-│  │  4. Return token count                          │     │
+│  │  1. Get token counter for current provider      │     │
+│  │  2. Delegate to provider implementation         │     │
+│  │  3. Return token count                          │     │
+│  └──────────────────┬──────────────────────────────┘     │
+│                     │                                     │
+│                     ▼                                     │
+│  ┌────────────────────────────────────────────────┐     │
+│  │      Token Provider Abstraction Layer           │     │
+│  │                                                  │     │
+│  │  • OpenAITokenCounter (tiktoken, GPT-4)         │     │
+│  │  • ClaudeTokenCounter (@anthropic-ai/tokenizer) │     │
+│  │  • FallbackTokenCounter (tiktoken, GPT-4)       │     │
+│  │    - Used for Gemini and Other providers        │     │
 │  └────────────────────────────────────────────────┘     │
 │                                                           │
 │  ┌────────────────────────────────────────────────┐     │
@@ -51,6 +67,7 @@
 │  │  Name: vscode-tiktoken-extension.countTokens    │     │
 │  │  Input: { text: string }                        │     │
 │  │  Output: LanguageModelToolResult                │     │
+│  │  Uses configured provider                       │     │
 │  └────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────┘
 
@@ -58,8 +75,9 @@
                            ▼
                            
           ┌────────────────────────────┐
-          │     tiktoken Library       │
-          │   (GPT-4 encoding model)   │
+          │   Token Provider Libraries │
+          │   • tiktoken               │
+          │   • @anthropic-ai/tokenizer│
           └────────────────────────────┘
 ```
 
@@ -113,10 +131,10 @@ Status Bar: [... other items ...] [status bar item hidden]
 
 ## Data Flow
 
-1. **User Action** → Editor/Document/Selection Change
+1. **User Action** → Editor/Document/Selection Change or Configuration Change
 2. **Event Trigger** → VS Code fires event
-3. **Event Handler** → `updateTokenCount()` called
-4. **Token Counting** → `countTokens()` uses tiktoken
+3. **Event Handler** → `updateTokenCount()` or `loadConfiguration()` called
+4. **Token Counting** → `countTokens()` delegates to selected provider
 5. **UI Update** → Status bar text updated
 6. **Display** → User sees token count in status bar
 
@@ -125,7 +143,13 @@ Status Bar: [... other items ...] [status bar item hidden]
 | Component | Responsibility |
 |-----------|---------------|
 | `extension.ts` | Main extension logic, activation, event handling |
-| `countTokens()` | Token counting using tiktoken |
+| `tokenProviders.ts` | Token provider abstraction and implementations |
+| `loadConfiguration()` | Load and update provider configuration |
+| `countTokens()` | Token counting using configured provider |
+| `getTokenCounter()` | Factory function to get provider instance |
+| `OpenAITokenCounter` | OpenAI/GPT token counter using tiktoken |
+| `ClaudeTokenCounter` | Claude token counter using @anthropic-ai/tokenizer |
+| `FallbackTokenCounter` | Fallback counter for Gemini/Other using tiktoken |
 | `updateTokenCount()` | Update status bar with current counts |
 | `statusBarItem` | VS Code UI element for displaying counts |
 | `LanguageModelTool` | API for AI assistants to count tokens |
@@ -133,7 +157,8 @@ Status Bar: [... other items ...] [status bar item hidden]
 ## Dependencies
 
 - `vscode`: VS Code API (v1.85.0+)
-- `tiktoken`: Token counting library (v1.0.15+)
+- `tiktoken`: OpenAI token counting library (v1.0.15+)
+- `@anthropic-ai/tokenizer`: Claude token counting library (v0.0.4+)
 - `@types/vscode`: TypeScript type definitions
 - `typescript`: TypeScript compiler
 

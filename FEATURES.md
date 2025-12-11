@@ -1,4 +1,4 @@
-# VS Code Tiktoken Extension - Features
+# VS Code Token Counter Extension - Features
 
 ## 🎯 Core Features
 
@@ -16,6 +16,7 @@ token:195
 - Switching between files
 - Editing the file content
 - Saving the file
+- Changing token provider configuration
 
 ### 2. Selection Token Counter
 
@@ -31,7 +32,27 @@ token:195 selection:14
 2. Select a paragraph with 50 tokens
 3. Status bar shows: `token:1000 selection:50`
 
-### 3. Language Model Tool API
+### 3. Multiple Token Provider Support
+
+Choose from different token counting providers based on the AI model you're working with.
+
+**Available Providers:**
+- **OpenAI (GPT)**: Uses tiktoken library for accurate GPT-4 tokenization
+- **Claude (Anthropic)**: Uses official @anthropic-ai/tokenizer for Claude models
+- **Gemini**: Falls back to tiktoken (provides reasonable estimation)
+- **Other**: Falls back to tiktoken for general-purpose use
+
+**Configuration:**
+Set your preferred provider in VS Code settings:
+```json
+{
+  "tokenCounter.defaultProvider": "openai"  // or "claude", "gemini", "other"
+}
+```
+
+The extension automatically reloads when you change providers, no restart needed.
+
+### 4. Language Model Tool API
 
 AI assistants can programmatically count tokens using the exposed tool.
 
@@ -52,15 +73,22 @@ vscode-tiktoken-extension.countTokens
 The text contains 4 tokens.
 ```
 
+The tool uses whichever provider is currently configured.
+
 ## 🔧 Technical Specifications
 
-### Tokenization Model
-- **Library**: tiktoken v1.0.15
-- **Model**: GPT-4 encoding
-- **Accuracy**: Same as OpenAI's GPT-4 tokenization
+### Tokenization Models
+- **OpenAI Provider**: tiktoken v1.0.15 with GPT-4 encoding
+- **Claude Provider**: @anthropic-ai/tokenizer v0.0.4 (official Anthropic library)
+- **Gemini/Other**: tiktoken v1.0.15 with GPT-4 encoding (fallback)
+
+### Accuracy
+- **OpenAI/GPT**: Exact match with OpenAI's tokenization
+- **Claude**: Exact match with Anthropic's tokenization
+- **Gemini/Other**: Approximate (tiktoken provides good general estimation)
 
 ### Performance
-- **Memory Usage**: Minimal (~4KB compiled)
+- **Memory Usage**: Minimal (~6KB compiled)
 - **CPU Impact**: Event-driven, no polling
 - **Startup Time**: Fast (onStartupFinished)
 
