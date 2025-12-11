@@ -1,5 +1,50 @@
 # Architecture
 
+## Extension Overview
+
+This extension is primarily designed as a **Language Model API tool** for AI assistants to programmatically count tokens, with support for multiple token providers (OpenAI, Claude, Gemini, and others). The status bar features serve as a secondary convenience for human developers.
+
+## Language Model Tool Integration (Primary Feature)
+
+```
+┌──────────────────┐
+│  AI Assistant    │
+│  (e.g., Copilot) │
+└────────┬─────────┘
+         │
+         │ Invoke Tool
+         │ { text: "..." }
+         ▼
+┌─────────────────────────────┐
+│ vscode-tiktoken-extension   │
+│      .countTokens           │
+└────────┬────────────────────┘
+         │
+         │ countTokens(text)
+         ▼
+┌─────────────────────────────┐
+│  Token Provider Factory     │
+│  getTokenCounter(provider)  │
+└────────┬────────────────────┘
+         │
+         ├──────┬──────┬──────┐
+         │      │      │      │
+         ▼      ▼      ▼      ▼
+    OpenAI  Claude Gemini Other
+   (tiktoken) (@anthropic) (fallback)
+         │      │      │      │
+         └──────┴──────┴──────┘
+         │
+         │ Return token count
+         ▼
+┌─────────────────────────────┐
+│ LanguageModelToolResult     │
+│ "The text contains X tokens"│
+└─────────────────────────────┘
+```
+
+## Status Bar Integration (Secondary Feature)
+
 ## Extension Flow
 
 ```
@@ -55,10 +100,10 @@
 │  ┌────────────────────────────────────────────────┐     │
 │  │      Token Provider Abstraction Layer           │     │
 │  │                                                  │     │
-│  │  • OpenAITokenCounter (tiktoken, GPT-4)         │     │
+│  │  • TiktokenTokenCounter (tiktoken, GPT-4)       │     │
+│  │    - Used for OpenAI, Gemini, Other providers   │     │
 │  │  • ClaudeTokenCounter (@anthropic-ai/tokenizer) │     │
-│  │  • FallbackTokenCounter (tiktoken, GPT-4)       │     │
-│  │    - Used for Gemini and Other providers        │     │
+│  │    - Used for Claude provider                   │     │
 │  └────────────────────────────────────────────────┘     │
 │                                                           │
 │  ┌────────────────────────────────────────────────┐     │
@@ -98,37 +143,6 @@ Status Bar: [... other items ...] [token:195 selection:14]
 Status Bar: [... other items ...] [status bar item hidden]
 ```
 
-## Language Model Tool Integration
-
-```
-┌──────────────────┐
-│  AI Assistant    │
-│  (e.g., Copilot) │
-└────────┬─────────┘
-         │
-         │ Invoke Tool
-         │ { text: "..." }
-         ▼
-┌─────────────────────────────┐
-│ vscode-tiktoken-extension   │
-│      .countTokens           │
-└────────┬────────────────────┘
-         │
-         │ countTokens(text)
-         ▼
-┌─────────────────────────────┐
-│   tiktoken Library          │
-│   encoding_for_model('gpt-4')|
-└────────┬────────────────────┘
-         │
-         │ Return token count
-         ▼
-┌─────────────────────────────┐
-│ LanguageModelToolResult     │
-│ "The text contains X tokens"│
-└─────────────────────────────┘
-```
-
 ## Data Flow
 
 1. **User Action** → Editor/Document/Selection Change or Configuration Change
@@ -147,9 +161,8 @@ Status Bar: [... other items ...] [status bar item hidden]
 | `loadConfiguration()` | Load and update provider configuration |
 | `countTokens()` | Token counting using configured provider |
 | `getTokenCounter()` | Factory function to get provider instance |
-| `OpenAITokenCounter` | OpenAI/GPT token counter using tiktoken |
+| `TiktokenTokenCounter` | Shared token counter for OpenAI/Gemini/Other using tiktoken |
 | `ClaudeTokenCounter` | Claude token counter using @anthropic-ai/tokenizer |
-| `FallbackTokenCounter` | Fallback counter for Gemini/Other using tiktoken |
 | `updateTokenCount()` | Update status bar with current counts |
 | `statusBarItem` | VS Code UI element for displaying counts |
 | `LanguageModelTool` | API for AI assistants to count tokens |
@@ -168,3 +181,4 @@ Status Bar: [... other items ...] [status bar item hidden]
 - Updates are triggered by VS Code events (efficient)
 - No polling or timers (minimal CPU usage)
 - Status bar item is hidden when no editor is active (clean UI)
+- Configuration changes applied immediately without restart

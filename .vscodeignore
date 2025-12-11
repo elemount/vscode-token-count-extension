@@ -1,5 +1,26 @@
+# Development files
 node_modules
-out
 .vscode-test
+src/**/*.ts
+tsconfig.json
+.eslintrc.json
+
+# Git and GitHub
+.git
+.gitignore
+.github
+
+# Build artifacts
 *.vsix
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Documentation that's not essential for users
+ARCHITECTURE.md
+DEMONSTRATION.md
+IMPLEMENTATION_SUMMARY.md
+example.md
+
+

@@ -2,37 +2,35 @@
 
 ## 🎯 Core Features
 
-### 1. Real-time Token Counting in Status Bar
+### 1. Language Model Tool API (Primary Feature)
 
-The extension displays the token count for the currently active file in the VS Code status bar.
+AI assistants can programmatically count tokens using the exposed tool. This is the primary purpose of the extension.
 
-**Display Format:**
+**Tool Name:**
 ```
-token:195
-```
-
-**When it updates:**
-- Opening a file
-- Switching between files
-- Editing the file content
-- Saving the file
-- Changing token provider configuration
-
-### 2. Selection Token Counter
-
-When you select text, the status bar shows both the document token count and the selection token count.
-
-**Display Format:**
-```
-token:195 selection:14
+vscode-tiktoken-extension.countTokens
 ```
 
-**Example scenario:**
-1. Open a file with 1000 tokens
-2. Select a paragraph with 50 tokens
-3. Status bar shows: `token:1000 selection:50`
+**Input:**
+```json
+{
+  "text": "Your text here"
+}
+```
 
-### 3. Multiple Token Provider Support
+**Output:**
+```
+The text contains 4 tokens.
+```
+
+**Purpose:**
+- Enables AI assistants to determine token counts for prompts and responses
+- Essential for managing token budgets in language model interactions
+- Allows automated token-aware text processing
+- Integrates seamlessly with VS Code's Language Model API
+- Uses your configured token provider for accurate counting
+
+### 2. Multiple Token Provider Support
 
 Choose from different token counting providers based on the AI model you're working with.
 
@@ -52,28 +50,35 @@ Set your preferred provider in VS Code settings:
 
 The extension automatically reloads when you change providers, no restart needed.
 
-### 4. Language Model Tool API
+### 3. Real-time Token Counting in Status Bar
 
-AI assistants can programmatically count tokens using the exposed tool.
+The extension displays the token count for the currently active file in the VS Code status bar as a convenience feature for developers.
 
-**Tool Name:**
+**Display Format:**
 ```
-vscode-tiktoken-extension.countTokens
-```
-
-**Input:**
-```json
-{
-  "text": "Your text here"
-}
+token:195
 ```
 
-**Output:**
+**When it updates:**
+- Opening a file
+- Switching between files
+- Editing the file content
+- Saving the file
+- Changing token provider configuration
+
+### 4. Selection Token Counter
+
+When you select text, the status bar shows both the document token count and the selection token count.
+
+**Display Format:**
 ```
-The text contains 4 tokens.
+token:195 selection:14
 ```
 
-The tool uses whichever provider is currently configured.
+**Example scenario:**
+1. Open a file with 1000 tokens
+2. Select a paragraph with 50 tokens
+3. Status bar shows: `token:1000 selection:50`
 
 ## 🔧 Technical Specifications
 
@@ -162,13 +167,13 @@ const result = await vscode.lm.invokeTool(
 ## 💡 Use Cases
 
 ### 1. API Cost Estimation
-Know exactly how many tokens your prompts/responses will use before sending to OpenAI.
+Know exactly how many tokens your prompts/responses will use before sending to OpenAI, Anthropic, or other providers.
 
 ### 2. Token Limit Management
 Stay within model token limits (e.g., 8K, 32K, 128K).
 
 ### 3. Prompt Engineering
-Optimize prompts by understanding their token cost.
+Optimize prompts by understanding their token cost across different providers.
 
 ### 4. Document Analysis
 Quickly see the token size of documentation or code files.
@@ -176,35 +181,41 @@ Quickly see the token size of documentation or code files.
 ### 5. Selection Optimization
 Select and refine specific sections while monitoring token count.
 
+### 6. AI Assistant Integration
+Primary use case: Enable AI assistants to make token-aware decisions programmatically.
+
 ## 🚀 Quick Start
 
 1. **Install**: Clone repo, run `npm install && npm run compile`
-2. **Launch**: Press F5 in VS Code
-3. **Use**: Open any file, see token count in status bar
-4. **Select**: Highlight text to see selection count
+2. **Configure**: Set your preferred provider in VS Code settings
+3. **Launch**: Press F5 in VS Code
+4. **Use**: Open any file, see token count in status bar
+5. **Select**: Highlight text to see selection count
 
 ## 📈 Benefits
 
-- ✅ **Accurate**: Uses official tiktoken library
+- ✅ **Accurate**: Uses official tokenizers for OpenAI and Claude
 - ✅ **Real-time**: Updates instantly on changes
 - ✅ **Lightweight**: Minimal resource usage
 - ✅ **Integrated**: Native VS Code status bar
 - ✅ **Accessible**: Language Model Tool API for AI
-- ✅ **Simple**: No configuration needed
+- ✅ **Flexible**: Multiple provider support
+- ✅ **Simple**: No complex configuration needed
 
 ## 🎓 Learning Resources
 
 ### Understanding Tokens
 - Tokens are pieces of text (words, parts of words, punctuation)
-- GPT models process text as tokens, not characters
 - Different models use different tokenization schemes
 - Token count affects API costs and model limits
+- Providers have different tokenization strategies
 
 ### Why This Matters
-- OpenAI charges per token, not per character
+- OpenAI and Anthropic charge per token, not per character
 - Models have maximum token limits
 - Efficient prompts use fewer tokens
 - Understanding tokenization improves AI interactions
+- Different providers may count differently
 
 ## 🔐 Security
 
@@ -223,4 +234,4 @@ For issues, questions, or feature requests:
 
 ---
 
-**Made with ❤️ using tiktoken and VS Code Extension API**
+**Made with ❤️ using tiktoken, @anthropic-ai/tokenizer, and VS Code Extension API**
