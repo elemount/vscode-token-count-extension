@@ -1,0 +1,59 @@
+{
+  "name": "vscode-tiktoken-extension",
+  "displayName": "Tiktoken Counter",
+  "description": "Show token count for current file and selection using tiktoken",
+  "version": "0.0.1",
+  "publisher": "elemount",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elemount/vscode-tiktoken-extension"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [],
+    "languageModelTools": [
+      {
+        "name": "vscode-tiktoken-extension.countTokens",
+        "displayName": "Count Tokens",
+        "description": "Count the number of tokens in text using tiktoken",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "The text to count tokens for"
+            }
+          },
+          "required": ["text"]
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "tiktoken": "^1.0.15"
+  }
+}
+
